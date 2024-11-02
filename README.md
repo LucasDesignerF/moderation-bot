@@ -229,8 +229,9 @@ python main.py
 Esse é um esqueleto inicial completo! Com isso você poderá iniciar seu bot de Discord em Python, para moderação do seu servidor!
 
 # Creditos
-- Desenvolvido por `lrfortes`.
-- Produção Code Connect(https://discord.gg/z5SkRN495p)
-- Desenvolvido para os membros do servidor @Syntax(https://discord.gg/FPFauHfjmw)
+- Desenvolvido por **lrfortes**.  
+- Produção [Code Connect](https://discord.gg/z5SkRN495p)  
+- Desenvolvido para os membros do servidor [@Syntax](https://discord.gg/FPFauHfjmw)
+
 
 # PERSEU ME COLOCA DE MODERADOR HAHAHA
