@@ -233,4 +233,4 @@ Esse é um esqueleto inicial completo! Com isso você poderá iniciar seu bot de
 - Produção Code Connect(https://discord.gg/z5SkRN495p)
 - Desenvolvido para os membros do servidor @Syntax(https://discord.gg/FPFauHfjmw)
 
-#PERSEU ME COLOCA DE MODERADOR HAHAHA
+# PERSEU ME COLOCA DE MODERADOR HAHAHA
