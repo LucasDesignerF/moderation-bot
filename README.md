@@ -82,13 +82,16 @@ Este código inicial:
 A primeira cog vai ser para moderação. Coloque esse arquivo na pasta `cogs`.
 ```python
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
+from discord import Member
+from datetime import datetime, timedelta
 import os
 import json
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.muted_users = {}  # Armazenar usuários silenciados temporariamente
 
     async def cog_load(self):
         for guild in self.bot.guilds:
@@ -104,10 +107,57 @@ class Moderation(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("⚙️ Cog de Moderação carregada!")
+        self.check_mutes.start()
 
-    @commands.slash_command(guild_ids=[...])  # Defina guild_ids ou remova para global
-    async def warn(self, ctx, member: discord.Member, *, reason: str):
-        """Avisa um membro por má conduta."""
+    # Comando de ban
+    @commands.slash_command(guild_ids=[...])
+    async def ban(self, ctx, member: Member, *, reason: str = "Não especificado"):
+        """Bane um membro do servidor."""
+        await member.ban(reason=reason)
+        await ctx.respond(f"🔨 {member.mention} foi banido. Motivo: {reason}")
+
+    # Comando de kick
+    @commands.slash_command(guild_ids=[...])
+    async def kick(self, ctx, member: Member, *, reason: str = "Não especificado"):
+        """Expulsa um membro do servidor."""
+        await member.kick(reason=reason)
+        await ctx.respond(f"👢 {member.mention} foi expulso. Motivo: {reason}")
+
+    # Comando de mute com duração
+    @commands.slash_command(guild_ids=[...])
+    async def mute(self, ctx, member: Member, duration: int, *, reason: str = "Não especificado"):
+        """Silencia um membro por uma duração específica (em minutos)."""
+        muted_role = discord.utils.get(ctx.guild.roles, name="Muted")
+        if not muted_role:
+            # Cria um cargo "Muted" se não existir
+            muted_role = await ctx.guild.create_role(name="Muted")
+            for channel in ctx.guild.channels:
+                await channel.set_permissions(muted_role, speak=False, send_messages=False)
+        
+        # Adiciona o cargo Muted ao membro
+        await member.add_roles(muted_role, reason=reason)
+        mute_end_time = datetime.utcnow() + timedelta(minutes=duration)
+        self.muted_users[member.id] = mute_end_time
+        await ctx.respond(f"🔇 {member.mention} foi silenciado por {duration} minutos. Motivo: {reason}")
+
+    # Verificar periodicamente se o mute de algum usuário expirou
+    @tasks.loop(minutes=1)
+    async def check_mutes(self):
+        current_time = datetime.utcnow()
+        to_unmute = [user_id for user_id, end_time in self.muted_users.items() if end_time <= current_time]
+
+        for user_id in to_unmute:
+            guild = self.bot.get_guild(...)  # Defina o ID do servidor
+            member = guild.get_member(user_id)
+            muted_role = discord.utils.get(guild.roles, name="Muted")
+            if member and muted_role:
+                await member.remove_roles(muted_role)
+            del self.muted_users[user_id]
+
+    # Comando de warn com cargo específico
+    @commands.slash_command(guild_ids=[...])
+    async def warn(self, ctx, member: Member, role: discord.Role, *, reason: str):
+        """Dá um aviso a um membro e atribui um cargo específico."""
         self.ensure_server_data(ctx.guild.id)
         path = f"./data/{ctx.guild.id}/moderation.json"
         
@@ -123,10 +173,13 @@ class Moderation(commands.Cog):
         with open(path, "w") as file:
             json.dump(data, file, indent=4)
 
-        await ctx.respond(f"{member.mention} foi avisado. Motivo: {reason}")
+        # Atribuir o cargo de aviso
+        await member.add_roles(role, reason=f"Aviso: {reason}")
+        await ctx.respond(f"{member.mention} foi avisado. Motivo: {reason}. Cargo atribuído: {role.name}")
 
+    # Comando de warnings para listar os avisos de um membro
     @commands.slash_command(guild_ids=[...])
-    async def warnings(self, ctx, member: discord.Member):
+    async def warnings(self, ctx, member: Member):
         """Mostra todos os avisos de um membro."""
         path = f"./data/{ctx.guild.id}/moderation.json"
         
@@ -142,12 +195,17 @@ class Moderation(commands.Cog):
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
+
 ```
 Neste código:
 
-- warn: Um comando que permite a moderação de membros com um aviso e armazena o motivo no JSON.
-- warnings: Exibe todos os avisos de um membro específico.
-Cada vez que um servidor adiciona o bot, ele cria um arquivo moderation.json onde os avisos são salvos.
+- Ban: Usa member.ban() para banir um usuário do servidor.
+- Kick: Usa member.kick() para expulsar um usuário do servidor.
+- Mute com duração:
+> Usa discord.utils.get() para buscar ou criar um cargo Muted e configurá-lo para impedir o envio de mensagens ou falas em canais.
+> Armazena a duração do mute em muted_users e verifica periodicamente se o tempo expirou usando uma tasks.loop.
+- Warn com cargo:
+> Armazena o motivo do aviso no arquivo JSON e atribui o cargo especificado ao membro com member.add_roles().
 
 # Instalação das Dependências
 No arquivo `requirements.txt`, adicione:
