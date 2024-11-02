@@ -199,8 +199,10 @@ def setup(bot):
 ```
 Neste código:
 
-- Ban: Usa member.ban() para banir um usuário do servidor.
-- Kick: Usa member.kick() para expulsar um usuário do servidor.
+- Ban:
+> Usa member.ban() para banir um usuário do servidor.
+- Kick:
+> Usa member.kick() para expulsar um usuário do servidor.
 - Mute com duração:
 > Usa discord.utils.get() para buscar ou criar um cargo Muted e configurá-lo para impedir o envio de mensagens ou falas em canais.
 > Armazena a duração do mute em muted_users e verifica periodicamente se o tempo expirou usando uma tasks.loop.
